@@ -18,8 +18,8 @@ build:
   tags:
     - docker
   before_script:
-    - docker login $IMAGE_PUSH_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USERNAME
-    - docker login $IMAGE_PULL_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USERNAME
+    - docker login $IMAGE_PUSH_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USER
+    - docker login $IMAGE_PULL_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USER
   script:
     - docker pull $IMAGE_PULL_BASE_NAME || true
     - docker build --pull --cache-from $IMAGE_PULL_BASE_NAME -t $IMAGE_PUSH_BASE_NAME .

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable

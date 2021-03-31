@@ -60,5 +60,6 @@ COPY --chown=python:python --from=venv /app/venv /app/venv/
 ENV PATH /app/venv/bin:$PATH
 
 COPY --chown=python:python scan_deps.py /app/
+RUN ln -s /app/scan_deps.py /usr/local/bin/scan-deps
 
-CMD ["python", "/app/scan_deps.py"]
+CMD ["scan-deps"]

@@ -63,4 +63,6 @@ COPY --chown=python:python scan_deps.py comment_gitlab.py /app/
 RUN ln -s /app/scan_deps.py /usr/local/bin/scan-deps
 RUN ln -s /app/comment_gitlab.py /usr/local/bin/comment-gitlab
 
+USER python
+
 CMD ["scan-deps"]

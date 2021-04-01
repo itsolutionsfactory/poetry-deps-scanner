@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-
+import concurrent
 import sys
 from concurrent.futures.thread import ThreadPoolExecutor
-from typing import Iterable
+from typing import Iterable, Optional
 
 import requests
 import toml
-from requests import HTTPError
 from semver import Version
 
 
@@ -18,20 +17,34 @@ def main():
     filepath = sys.argv[1]
     lock = get_lock_content(filepath)
     packages = lock["package"]
+    updates = []
+
     with ThreadPoolExecutor() as executor:
-        for package in packages:
-            executor.submit(print_package_report, package)
+        future_to_package = {
+            executor.submit(print_package_report, package): package["name"]
+            for package in packages
+        }
+        for future in concurrent.futures.as_completed(future_to_package):
+            package_name = future_to_package[future]
+            try:
+                data = future.result()
+            except Exception as exc:
+                data = f"e {package_name} generated an exception: {exc}"
+            if data:
+                updates.append(data)
+
+    if not updates:
+        print("Everything up to date.")
+    else:
+        print("\n".join(sorted(updates)))
 
 
-def print_package_report(package):
+def print_package_report(package) -> Optional[str]:
     name = package["name"]
     version = package["version"]
     url, is_pypi = get_url(package)
     res = requests.get(url, headers={"Accept": "application/json"})
-    try:
-        res.raise_for_status()
-    except HTTPError as e:
-        print(f"Error in network query for {name}: {e}")
+    res.raise_for_status()
 
     json = res.json()
     if is_pypi:
@@ -42,7 +55,8 @@ def print_package_report(package):
         latest = get_latest_version(versions)
         source = "d"
     if version != latest:
-        print(f"{source} {name}: current={version} -> latest={latest}")
+        return f"{source} {name}: current={version} -> latest={latest}"
+    return None
 
 
 def get_url(package: dict) -> (str, bool):

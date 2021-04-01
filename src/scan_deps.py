@@ -68,6 +68,8 @@ def get_url(package: dict) -> (str, bool):
     source_url = source_url.replace("+simple", "")  # type: str
     if not source_url.endswith("/"):
         source_url += "/"
+    elif source_url.endswith("//"):
+        source_url = source_url[:-1]
     return source_url + name, False
 
 

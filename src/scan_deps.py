@@ -2,7 +2,7 @@
 import concurrent
 import sys
 from concurrent.futures.thread import ThreadPoolExecutor
-from typing import Iterable, Optional
+from typing import Dict, Iterable, Optional, Set
 
 import requests
 import toml
@@ -10,18 +10,27 @@ from semver import Version
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) > 3 or len(sys.argv) < 2:
         script_name = sys.argv[0]
-        print(f"Usage: {script_name} <lock file path>")
+        print(f"Usage: {script_name} <path/to/poetry.lock> [<path/to/pyproject.toml>]")
         sys.exit(1)
-    filepath = sys.argv[1]
-    lock = get_lock_content(filepath)
+    if len(sys.argv) == 3:
+        pyproject_file_path = sys.argv[2]
+    else:
+        pyproject_file_path = None
+
+    direct_dependencies = get_direct_dependencies(pyproject_file_path)
+
+    lock_file_path = sys.argv[1]
+    lock = toml.load(lock_file_path)
     packages = lock["package"]
     updates = []
 
     with ThreadPoolExecutor() as executor:
         future_to_package = {
-            executor.submit(print_package_report, package): package["name"]
+            executor.submit(
+                print_package_report, package, direct_dependencies
+            ): package["name"]
             for package in packages
         }
         for future in concurrent.futures.as_completed(future_to_package):
@@ -39,7 +48,23 @@ def main():
         print("\n".join(sorted(updates)))
 
 
-def print_package_report(package) -> Optional[str]:
+def get_direct_dependencies(pyproject_file_path: str) -> Optional[Set[str]]:
+    if pyproject_file_path is None:
+        return None
+    pyproject = toml.load(pyproject_file_path)
+    poetry = pyproject.get("tool", {}).get("poetry", {})
+    if not poetry:
+        return None
+    dependencies = set(
+        dep_name.lower() for dep_name in poetry.get("dependencies", {}).keys()
+    )
+    dependencies.update(
+        dep_name.lower() for dep_name in poetry.get("dev-dependencies", {}).keys()
+    )
+    return dependencies
+
+
+def print_package_report(package: Dict, dependencies: Iterable[str]) -> Optional[str]:
     name = package["name"]
     version = package["version"]
     url, is_pypi = get_url(package)
@@ -49,19 +74,31 @@ def print_package_report(package) -> Optional[str]:
     json = res.json()
     if is_pypi:
         latest = json["info"]["version"]
-        source = "p"
+        source = "pypi "  # space intentional to maintain alignment
     else:
         versions = json["result"].keys()
         latest = get_latest_version(versions)
-        source = "d"
+        source = "devpi"
+
+    if dependencies is None:
+        transitive_or_direct = ""
+    elif name.lower() in dependencies:
+        transitive_or_direct = "direct "
+    else:
+        transitive_or_direct = "trans. "
+
     if version != latest:
-        return f"{source} {name}: current={version} -> latest={latest}"
+        return f"{transitive_or_direct}{source} {name}: current={version} -> latest={latest}"
     return None
 
 
 def get_url(package: dict) -> (str, bool):
     name = package["name"]
-    source_url = package["source"]["url"]
+    source = package.get("source")
+    if not source:
+        return f"https://pypi.org/pypi/{name}/json", True
+
+    source_url = source["url"]
     if "https://devpi.itsf.io/root/pypi" in source_url:
         return f"https://pypi.org/pypi/{name}/json", True
 
@@ -71,12 +108,6 @@ def get_url(package: dict) -> (str, bool):
     elif source_url.endswith("//"):
         source_url = source_url[:-1]
     return source_url + name, False
-
-
-def get_lock_content(filepath):
-    with open(filepath) as f:
-        lock = toml.load(f)
-    return lock
 
 
 def get_latest_version(versions: Iterable[str]) -> str:

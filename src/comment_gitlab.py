@@ -32,7 +32,7 @@ def main():
             existing_note = note
             break
 
-    message = "```"
+    message = "```\n"
     for line in fileinput.input():
         message += line
     message += "```"

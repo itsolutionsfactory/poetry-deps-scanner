@@ -31,9 +31,6 @@ this repository:
 
 ![Comment screenshot](img/comment-screenshot.png)
 
-If a comment from the bot user already exists, it will be replaced,
-in order to reduce the noise.
-
 ## Dependencies analysis
 
 The following snippet is an example output the first script may produce:
@@ -77,6 +74,11 @@ the `only: [merge_requests]` in the `.gitlab-ci.yml` above.
 
 Of course, you can also provide them manually to integrate with any other build
 system.
+
+If a comment from the bot user already exists, it will be replaced,
+in order to reduce the noise. In other words, there will be at most one
+comment from the bot on a given merge request. It will contain the results of
+the latest check.
 
 ## Build the docker image outside ITSF
 

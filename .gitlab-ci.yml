@@ -5,9 +5,12 @@ variables:
   # Can't compose variables with user-defined ones, so we repeat ourselves :'(
   # See https://gitlab.com/gitlab-org/gitlab-runner/-/issues/1809
   PROXY_REGISTRY: nexus.itsf.io:5005
+
   IMAGE_REGISTRY: nexus.itsf.io:5004
   IMAGE_BASE_NAME: nexus.itsf.io:5004/$CI_PROJECT_PATH
   IMAGE_DEPS: nexus.itsf.io:5004/$CI_PROJECT_PATH:deps
+
+  PRE_COMMIT_IMAGE: nexus.itsf.io:5004/docker/pre-commit:latest
 
 build:
   stage: build
@@ -26,3 +29,10 @@ build:
     - docker pull $IMAGE_BASE_NAME || true
     - docker build --pull --cache-from $IMAGE_DEPS --cache-from $IMAGE_BASE_NAME -t $IMAGE_BASE_NAME .
     - docker push $IMAGE_BASE_NAME
+
+
+pre_commit:
+  stage: build
+  image: $PRE_COMMIT_IMAGE
+  script:
+    - pre-commit run --all-files --color always --show-diff-on-failure

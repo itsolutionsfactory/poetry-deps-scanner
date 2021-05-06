@@ -86,6 +86,11 @@ The Dockerfile inside the repository references images from our internal
 Docker registry proxy. You can easily build it on your own by removing
 the `nexus.itsf.io:5005/` prefix.
 
-```bash
+```shell-script
+# on Ubuntu
+sed -i 's/nexus.itsf.io:5005\///g' Dockerfile
+# on macOS
+sed -e 's/nexus.itsf.io:5005\///g' -i "" Dockerfile
+# then
 docker build -t deps-scanner .
 ```

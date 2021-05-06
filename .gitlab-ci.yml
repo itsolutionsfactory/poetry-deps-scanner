@@ -11,10 +11,19 @@ variables:
   IMAGE_DEPS: nexus.itsf.io:5004/$CI_PROJECT_PATH:deps
 
   PRE_COMMIT_IMAGE: nexus.itsf.io:5004/docker/pre-commit:latest
+  SCAN_DEPS_IMAGE: nexus.itsf.io:5004/it4nw/libs/deps-scanner:latest
+
+.only: &only
+  only:
+    - merge_requests
+    - master
+    - tags
+    - develop
 
 build:
   stage: build
   image: docker:git
+  <<: *only
   services:
     - docker:stable
   tags:
@@ -34,5 +43,16 @@ build:
 pre_commit:
   stage: build
   image: $PRE_COMMIT_IMAGE
+  <<: *only
   script:
     - pre-commit run --all-files --color always --show-diff-on-failure
+
+
+scan-deps:
+  stage: build
+  image: $SCAN_DEPS_IMAGE
+  allow_failure: true
+  script:
+    - scan-deps poetry.lock pyproject.toml | comment-gitlab
+  only:
+    - merge_requests

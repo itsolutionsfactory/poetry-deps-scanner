@@ -5,7 +5,6 @@ FROM nexus.itsf.io:5005/python:3.8.8-buster AS venv
 
 # Prepare system
 ##############################################
-# https://python-poetry.org/docs/#installation
 ENV POETRY_VERSION=1.1.5
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
 

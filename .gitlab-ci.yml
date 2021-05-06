@@ -4,28 +4,25 @@ stages:
 variables:
   # Can't compose variables with user-defined ones, so we repeat ourselves :'(
   # See https://gitlab.com/gitlab-org/gitlab-runner/-/issues/1809
-  IMAGE_PULL_REGISTRY: nexus.itsf.io:5005
-  IMAGE_PULL_BASE_NAME: nexus.itsf.io:5005/$CI_PROJECT_PATH
-  IMAGE_PULL_DEPS: nexus.itsf.io:5005/$CI_PROJECT_PATH:deps
-
-  IMAGE_PUSH_REGISTRY: nexus.itsf.io:5004
-  IMAGE_PUSH_BASE_NAME: nexus.itsf.io:5004/$CI_PROJECT_PATH
-  IMAGE_PUSH_DEPS: nexus.itsf.io:5004/$CI_PROJECT_PATH:deps
+  PROXY_REGISTRY: nexus.itsf.io:5005
+  IMAGE_REGISTRY: nexus.itsf.io:5004
+  IMAGE_BASE_NAME: nexus.itsf.io:5004/$CI_PROJECT_PATH
+  IMAGE_DEPS: nexus.itsf.io:5004/$CI_PROJECT_PATH:deps
 
 build:
   stage: build
   image: docker:git
   services:
-  - docker:stable
+    - docker:stable
   tags:
     - docker
   before_script:
-    - docker login $IMAGE_PUSH_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USER
-    - docker login $IMAGE_PULL_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USER
+    - docker login $IMAGE_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USER
+    - docker login $PROXY_REGISTRY -p $NEXUS_PASSWORD -u $NEXUS_USER
   script:
-    - docker pull $IMAGE_PULL_DEPS || true
-    - docker build --pull --cache-from $IMAGE_PULL_DEPS -t $IMAGE_PUSH_DEPS --target venv .
-    - docker push $IMAGE_PUSH_DEPS
-    - docker pull $IMAGE_PULL_BASE_NAME || true
-    - docker build --pull --cache-from $IMAGE_PUSH_DEPS --cache-from $IMAGE_PULL_BASE_NAME -t $IMAGE_PUSH_BASE_NAME .
-    - docker push $IMAGE_PUSH_BASE_NAME
+    - docker pull $IMAGE_DEPS || true
+    - docker build --pull --cache-from $IMAGE_DEPS -t $IMAGE_DEPS --target venv .
+    - docker push $IMAGE_DEPS
+    - docker pull $IMAGE_BASE_NAME || true
+    - docker build --pull --cache-from $IMAGE_DEPS --cache-from $IMAGE_BASE_NAME -t $IMAGE_BASE_NAME .
+    - docker push $IMAGE_BASE_NAME

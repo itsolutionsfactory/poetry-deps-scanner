@@ -25,7 +25,7 @@ RUN . /app/venv/bin/activate \
     && poetry install
 
 # will install the scripts as executable
-COPY deps_scanner/ ./deps_scanner/
+COPY poetry_deps_scanner/ ./deps_scanner/
 COPY README.md ./
 RUN . /app/venv/bin/activate \
     && poetry install
@@ -51,7 +51,7 @@ COPY --chown=python:python --from=venv /app/venv /app/venv/
 ENV PATH /app/venv/bin:$PATH
 
 # still required for the executable scripts to run
-COPY --chown=python:python deps_scanner/ /app/deps_scanner/
+COPY --chown=python:python poetry_deps_scanner/ /app/deps_scanner/
 
 USER python
 

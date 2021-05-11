@@ -2,3 +2,4 @@
 .idea
 .envrc
 __pycache__
+dist

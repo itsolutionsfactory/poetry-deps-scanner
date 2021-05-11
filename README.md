@@ -31,6 +31,12 @@ this repository:
 
 ![Comment screenshot](img/comment-screenshot.png)
 
+## Installation
+
+```bash
+python -m pip install poetry-deps-scanner
+```
+
 ## Dependencies analysis
 
 The following snippet is an example output the first script may produce:

@@ -67,7 +67,19 @@ def get_direct_dependencies(pyproject_file_path: str) -> Optional[Set[str]]:
 def print_package_report(package: Dict, dependencies: Iterable[str]) -> Optional[str]:
     name = package["name"]
     version = package["version"]
+
+    if dependencies is None:
+        transitive_or_direct = ""
+    elif name.lower() in dependencies:
+        transitive_or_direct = "direct "
+    else:
+        transitive_or_direct = "trans. "
+
     url, is_pypi = get_url(package)
+    if url is None:
+        source = "git? "
+        return f"{transitive_or_direct}{source} {name}: Couldn't compare versions."
+
     res = requests.get(url, headers={"Accept": "application/json"})
     res.raise_for_status()
 
@@ -80,13 +92,6 @@ def print_package_report(package: Dict, dependencies: Iterable[str]) -> Optional
         latest = get_latest_version(versions)
         source = "devpi"
 
-    if dependencies is None:
-        transitive_or_direct = ""
-    elif name.lower() in dependencies:
-        transitive_or_direct = "direct "
-    else:
-        transitive_or_direct = "trans. "
-
     if version != latest:
         return f"{transitive_or_direct}{source} {name}: current={version} -> latest={latest}"
     return None
@@ -97,6 +102,9 @@ def get_url(package: dict) -> (str, bool):
     source = package.get("source")
     if not source:
         return f"https://pypi.org/pypi/{name}/json", True
+
+    if source.get("type") == "git":
+        return None, False
 
     source_url = source["url"]
     if "https://devpi.itsf.io/root/pypi" in source_url:

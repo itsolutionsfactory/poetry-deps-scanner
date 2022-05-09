@@ -27,10 +27,3 @@ repos:
     hooks:
     - id: black
       types: [python]
-  - repo: https://gitlab.com/devopshq/gitlab-ci-linter
-    rev: v1.0.3
-    hooks:
-      - id: gitlab-ci-linter
-        args:
-          - --server
-          - https://git.itsf.io

@@ -1,15 +1,14 @@
 ##############################################
 # Build virtualenv
 ##############################################
-FROM nexus.itsf.io:5005/python:3.8.10-buster AS venv
+FROM nexus.itsf.io:5005/python:3.10.4-bullseye AS venv
 
 # Prepare system
 ##############################################
-ENV POETRY_VERSION=1.1.6
+ENV POETRY_VERSION=1.1.11
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
 
-ENV PATH /root/.poetry/bin:/root/.local/bin:$PATH
-ENV PYTHONPATH $PYTHONPATH:/root/.poetry/lib
+ENV PATH /root/.local/bin:$PATH
 
 # Install python dependencies
 ##############################################
@@ -34,7 +33,7 @@ RUN . /app/venv/bin/activate \
 ##############################################
 # Main image
 ##############################################
-FROM nexus.itsf.io:5005/python:3.8.10-slim-buster as final
+FROM nexus.itsf.io:5005/python:3.10.4-slim-bullseye as final
 
 # Expected env vars to comment in Gitlab MR
 ENV BOT_USERNAME ""

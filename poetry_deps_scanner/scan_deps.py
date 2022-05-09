@@ -4,9 +4,9 @@ import sys
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Dict, Iterable, Optional, Set
 
+import packaging.version
 import requests
 import toml
-from semver import Version
 
 
 def main():
@@ -119,10 +119,7 @@ def get_url(package: dict) -> (str, bool):
 
 
 def get_latest_version(versions: Iterable[str]) -> str:
-    try:
-        versions = [Version.parse(version) for version in versions]
-    except ValueError:
-        return "couldn't determine: Not all versions are valid semver"
+    versions = [packaging.version.parse(version) for version in versions]
     return str(max(versions))
 
 

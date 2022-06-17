@@ -7,6 +7,7 @@ from typing import Dict, Iterable, Optional, Set
 import packaging.version
 import requests
 import toml
+from requests import JSONDecodeError
 
 
 def main():
@@ -38,7 +39,11 @@ def main():
             try:
                 data = future.result()
             except Exception as exc:
-                data = f"e {package_name} generated an exception: {exc}"
+                exc_name = type(exc).__name__
+                message = str(exc)
+                if message:
+                    message = f" ({message})"
+                data = f"e {package_name} generated an exception: {exc_name}{message}"
             if data:
                 updates.append(data)
 
@@ -83,7 +88,11 @@ def print_package_report(package: Dict, dependencies: Iterable[str]) -> Optional
     res = requests.get(url, headers={"Accept": "application/json"})
     res.raise_for_status()
 
-    json = res.json()
+    try:
+        json = res.json()
+    except JSONDecodeError:
+        raise UnsupportedApiError("Couldn't parse JSON")
+
     if is_pypi:
         latest = json["info"]["version"]
         source = "pypi "  # space intentional to maintain alignment
@@ -106,11 +115,7 @@ def get_url(package: dict) -> (str, bool):
     if source.get("type") == "git":
         return None, False
 
-    source_url = source["url"]
-    if "https://devpi.itsf.io/root/pypi" in source_url:
-        return f"https://pypi.org/pypi/{name}/json", True
-
-    source_url = source_url.replace("+simple", "")  # type: str
+    source_url = source["url"].replace("+simple", "")  # type: str
     if not source_url.endswith("/"):
         source_url += "/"
     elif source_url.endswith("//"):
@@ -121,6 +126,14 @@ def get_url(package: dict) -> (str, bool):
 def get_latest_version(versions: Iterable[str]) -> str:
     versions = [packaging.version.parse(version) for version in versions]
     return str(max(versions))
+
+
+class ScanDepsError(Exception):
+    pass
+
+
+class UnsupportedApiError(ScanDepsError):
+    pass
 
 
 if __name__ == "__main__":

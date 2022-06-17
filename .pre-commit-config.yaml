@@ -3,11 +3,8 @@ repos:
     rev: v4.2.0
     hooks:
       - id: check-ast
-        types: [python]
       - id: check-toml
-        types: [toml]
       - id: check-yaml
-        types: [yaml]
       - id: end-of-file-fixer
       - id: check-merge-conflict
       - id: pretty-format-json
@@ -21,9 +18,31 @@ repos:
     rev: 5.10.1
     hooks:
       - id: isort
-        types: [python]
+        args:
+          - --profile=black
   - repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:
-    - id: black
-      types: [python]
+      - id: black
+        args:
+          - --target-version=py310
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.31.1
+    hooks:
+      - id: pyupgrade
+        args:
+          - --py310-plus
+  - repo: https://github.com/flakeheaven/flakeheaven
+    rev: 0.11.0
+    hooks:
+      - id: flakeheaven
+        additional_dependencies:
+          - flake8-annotations-complexity
+          - flake8-bandit
+          - flake8-builtins
+          - flake8-bugbear
+          - flake8-comprehensions
+          - flake8-docstrings
+          - flake8-eradicate
+          - flake8-noqa
+          - pep8-naming

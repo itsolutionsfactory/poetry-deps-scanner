@@ -2,7 +2,7 @@
 import concurrent
 import sys
 from concurrent.futures.thread import ThreadPoolExecutor
-from typing import Dict, Iterable, Optional, Set
+from typing import Iterable
 
 import packaging.version
 import requests
@@ -53,23 +53,23 @@ def main():
         print("\n".join(sorted(updates)))
 
 
-def get_direct_dependencies(pyproject_file_path: str) -> Optional[Set[str]]:
+def get_direct_dependencies(pyproject_file_path: str) -> set[str] | None:
     if pyproject_file_path is None:
         return None
     pyproject = toml.load(pyproject_file_path)
     poetry = pyproject.get("tool", {}).get("poetry", {})
     if not poetry:
         return None
-    dependencies = set(
+    dependencies = {
         dep_name.lower() for dep_name in poetry.get("dependencies", {}).keys()
-    )
+    }
     dependencies.update(
         dep_name.lower() for dep_name in poetry.get("dev-dependencies", {}).keys()
     )
     return dependencies
 
 
-def print_package_report(package: Dict, dependencies: Iterable[str]) -> Optional[str]:
+def print_package_report(package: dict, dependencies: Iterable[str]) -> str | None:
     name = package["name"]
     version = package["version"]
 

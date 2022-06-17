@@ -50,8 +50,23 @@ scan-deps = "poetry_deps_scanner.scan_deps:main"
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
-target-version = ['py310']
+###############################################################################
+# flake8 / flakeheaven
+###############################################################################
+[tool.flakeheaven]
+max_complexity = 10
+format = "grouped"
 
-[tool.isort]
-profile = "black"
+# Base rules
+#############################
+[tool.flakeheaven.plugins]
+"*" = [
+    "+*",
+    "-E501", # long lines
+    "-E203", # conflict with black on PEP8 interpretation
+    "-W503",  # deprecated rule: https://www.flake8rules.com/rules/W503.html
+]
+flake8-docstrings = [
+    "+*",
+    "-D1??", # missing docstring
+]

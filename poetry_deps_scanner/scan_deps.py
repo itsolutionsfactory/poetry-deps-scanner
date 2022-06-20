@@ -115,7 +115,7 @@ def get_url(package: dict) -> str | None:
 
 
 def get_versions(packages: Iterable[DistributionPackage]) -> list[Version]:
-    return [parse(package.version) for package in packages]
+    return [parse(package.version) for package in packages if package.version]
 
 
 def get_latest_version(current_version: str, versions: Iterable[Version]) -> str:

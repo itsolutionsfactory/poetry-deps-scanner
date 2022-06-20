@@ -4,10 +4,9 @@ import sys
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable
 
-import packaging.version
-import requests
 import toml
-from requests import JSONDecodeError
+from packaging.version import Version, parse
+from pypi_simple import PYPI_SIMPLE_ENDPOINT, DistributionPackage, PyPISimple
 
 
 def main():
@@ -80,52 +79,56 @@ def print_package_report(package: dict, dependencies: Iterable[str]) -> str | No
     else:
         transitive_or_direct = "trans. "
 
-    url, is_pypi = get_url(package)
+    url = get_url(package)
     if url is None:
         source = "git? "
         return f"{transitive_or_direct}{source} {name}: Couldn't compare versions."
 
-    res = requests.get(url, headers={"Accept": "application/json"})
-    res.raise_for_status()
+    with PyPISimple(url) as client:
+        project = client.get_project_page(name)
 
-    try:
-        json = res.json()
-    except JSONDecodeError:
-        raise UnsupportedApiError("Couldn't parse JSON")
-
-    if is_pypi:
-        latest = json["info"]["version"]
+    if url == PYPI_SIMPLE_ENDPOINT:
         source = "pypi "  # space intentional to maintain alignment
     else:
-        versions = json["result"].keys()
-        latest = get_latest_version(versions)
         source = "devpi"
+
+    if not project:
+        return f"{transitive_or_direct}{source} {name}: Couldn't find project."
+
+    versions = get_versions(project.packages)
+    latest = get_latest_version(version, versions)
 
     if version != latest:
         return f"{transitive_or_direct}{source} {name}: current={version} -> latest={latest}"
     return None
 
 
-def get_url(package: dict) -> (str, bool):
-    name = package["name"]
+def get_url(package: dict) -> str | None:
     source = package.get("source")
     if not source:
-        return f"https://pypi.org/pypi/{name}/json", True
+        return PYPI_SIMPLE_ENDPOINT
 
     if source.get("type") == "git":
-        return None, False
+        return None
 
-    source_url = source["url"].replace("+simple", "")  # type: str
-    if not source_url.endswith("/"):
-        source_url += "/"
-    elif source_url.endswith("//"):
-        source_url = source_url[:-1]
-    return source_url + name, False
+    return source["url"]
 
 
-def get_latest_version(versions: Iterable[str]) -> str:
-    versions = [packaging.version.parse(version) for version in versions]
-    return str(max(versions))
+def get_versions(packages: Iterable[DistributionPackage]) -> list[Version]:
+    return [parse(package.version) for package in packages if package.version]
+
+
+def get_latest_version(current_version: str, versions: Iterable[Version]) -> str:
+    current_version = parse(current_version)
+    if current_version.is_prerelease:
+        return str(max(versions))
+    else:
+        # Filter out pre-releases if current version is not one
+        return str(max(filter(is_public_version, versions)))
+
+
+def is_public_version(version: Version):
+    return not version.is_prerelease and not version.is_devrelease
 
 
 class ScanDepsError(Exception):

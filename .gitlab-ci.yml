@@ -1,5 +1,6 @@
 stages:
   - build
+  - scan
 
 variables:
   # Can't compose variables with user-defined ones, so we repeat ourselves :'(
@@ -49,7 +50,7 @@ pre_commit:
 
 
 scan-deps:
-  stage: build
+  stage: scan
   image: $SCAN_DEPS_IMAGE
   allow_failure: true
   script:

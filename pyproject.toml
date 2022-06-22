@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "poetry-deps-scanner"
-version = "2.0.0"
+version = "2.0.0-post1"
 description = "Analyse poetry dependencies and comment on gitlab"
 readme = "README.md"
 license = "MIT"
@@ -9,11 +9,10 @@ maintainers = [
     "Gabriel Augendre <gabriel.augendre@itsfactory.fr>",
     "Romain Da Costa Vieira <romain.da-costa-vieira@itsfactory.fr>",
     "Jason Gallet <jason.gallet@itsfactory.fr>",
-    "Jean-Sébastien Heitz-Schaaf <jean-sebastien.heitz-schaaf@itsfactory.fr>",
     "Emilio Staropoli <emilio.staropoli@itsfactory.fr>",
 ]
 homepage = "https://github.com/itsolutionsfactory/poetry-deps-scanner/"
-repository = "https://github.com/itsolutionsfactory/pid-file-checker"
+repository = "https://github.com/itsolutionsfactory/poetry-deps-scanner"
 keywords = [
     "pyhon-poetry",
     "poetry",

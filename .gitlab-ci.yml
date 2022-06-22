@@ -23,10 +23,10 @@ variables:
 
 build:
   stage: build
-  image: docker:git
+  image: $PROXY_REGISTRY/docker:git
   <<: *only
   services:
-    - docker:stable
+    - $PROXY_REGISTRY/docker:stable
   tags:
     - docker
   before_script:

@@ -1,8 +1,13 @@
 #!/usr/bin/env python
+from __future__ import annotations
+
 import concurrent
+import enum
 import sys
 from concurrent.futures.thread import ThreadPoolExecutor
+from dataclasses import dataclass
 from typing import Iterable
+from urllib.parse import urlparse
 
 import toml
 from packaging.version import Version, parse
@@ -28,23 +33,25 @@ def main():
 
     with ThreadPoolExecutor() as executor:
         future_to_package = {
-            executor.submit(
-                print_package_report, package, direct_dependencies
-            ): package["name"]
+            executor.submit(get_display_package, package, direct_dependencies): package[
+                "name"
+            ]
             for package in packages
         }
         for future in concurrent.futures.as_completed(future_to_package):
             package_name = future_to_package[future]
             try:
-                data = future.result()
+                display_package: DisplayPackage = future.result()
+                if display_package.should_display():
+                    updates.append(str(display_package))
             except Exception as exc:
                 exc_name = type(exc).__name__
                 message = str(exc)
                 if message:
                     message = f" ({message})"
-                data = f"e {package_name} generated an exception: {exc_name}{message}"
-            if data:
-                updates.append(data)
+                updates.append(
+                    f"e {package_name} generated an exception: {exc_name}{message}"
+                )
 
     if not updates:
         print("Everything up to date.")
@@ -68,50 +75,47 @@ def get_direct_dependencies(pyproject_file_path: str) -> set[str] | None:
     return dependencies
 
 
-def print_package_report(package: dict, dependencies: Iterable[str]) -> str | None:
+def get_display_package(package: dict, dependencies: Iterable[str]) -> DisplayPackage:
     name = package["name"]
     version = package["version"]
+    display_package = DisplayPackage(name=name, current_version=version)
 
     if dependencies is None:
-        transitive_or_direct = ""
+        display_package.transitive_or_direct = TransitiveOrDirect.UNKNOWN
     elif name.lower() in dependencies:
-        transitive_or_direct = "direct "
+        display_package.transitive_or_direct = TransitiveOrDirect.DIRECT
     else:
-        transitive_or_direct = "trans. "
+        display_package.transitive_or_direct = TransitiveOrDirect.TRANSITIVE
 
-    url = get_url(package)
-    if url is None:
-        source = "git? "
-        return f"{transitive_or_direct}{source} {name}: Couldn't compare versions."
+    url, can_fetch = get_url(package)
+    display_package.source = url
+    if not can_fetch:
+        display_package.error = "Couldn't compare versions."
+        return display_package
 
     with PyPISimple(url) as client:
         project = client.get_project_page(name)
 
-    if url == PYPI_SIMPLE_ENDPOINT:
-        source = "pypi "  # space intentional to maintain alignment
-    else:
-        source = "devpi"
-
     if not project:
-        return f"{transitive_or_direct}{source} {name}: Couldn't find project."
+        display_package.error = "Couldn't find project."
+        return display_package
 
     versions = get_versions(project.packages)
-    latest = get_latest_version(version, versions)
+    display_package.latest_version = get_latest_version(version, versions)
 
-    if version != latest:
-        return f"{transitive_or_direct}{source} {name}: current={version} -> latest={latest}"
-    return None
+    return display_package
 
 
-def get_url(package: dict) -> str | None:
+def get_url(package: dict) -> tuple[str, bool]:
     source = package.get("source")
+    can_fetch = True
     if not source:
-        return PYPI_SIMPLE_ENDPOINT
+        return PYPI_SIMPLE_ENDPOINT, can_fetch
 
     if source.get("type") == "git":
-        return None
+        can_fetch = False
 
-    return source["url"]
+    return source["url"], can_fetch
 
 
 def get_versions(packages: Iterable[DistributionPackage]) -> list[Version]:
@@ -137,6 +141,33 @@ class ScanDepsError(Exception):
 
 class UnsupportedApiError(ScanDepsError):
     pass
+
+
+class TransitiveOrDirect(enum.Enum):
+    TRANSITIVE = "trans. "
+    DIRECT = "direct "
+    UNKNOWN = ""
+
+
+@dataclass
+class DisplayPackage:
+    name: str
+    transitive_or_direct: TransitiveOrDirect = TransitiveOrDirect.UNKNOWN
+    source: str = ""
+    current_version: str = ""
+    latest_version: str = ""
+    error: str = ""
+
+    def __str__(self) -> str:
+        source = urlparse(self.source).netloc
+        if self.error:
+            return (
+                f"{self.transitive_or_direct.value}{source} {self.name}: {self.error}"
+            )
+        return f"{self.transitive_or_direct.value}{source} {self.name}: current={self.current_version} -> latest={self.latest_version}"
+
+    def should_display(self) -> bool:
+        return bool(self.error) or self.current_version != self.latest_version
 
 
 if __name__ == "__main__":

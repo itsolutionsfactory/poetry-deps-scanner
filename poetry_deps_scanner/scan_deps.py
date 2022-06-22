@@ -9,8 +9,10 @@ from dataclasses import dataclass
 from typing import Iterable
 from urllib.parse import urlparse
 
+import prettytable
 import toml
 from packaging.version import Version, parse
+from prettytable import PrettyTable
 from pypi_simple import PYPI_SIMPLE_ENDPOINT, DistributionPackage, PyPISimple
 
 
@@ -29,7 +31,8 @@ def main():
     lock_file_path = sys.argv[1]
     lock = toml.load(lock_file_path)
     packages = lock["package"]
-    updates = []
+    table = PrettyTable(["Name", "Type", "Source", "Message"])
+    row_count = 0
 
     with ThreadPoolExecutor() as executor:
         future_to_package = {
@@ -43,20 +46,27 @@ def main():
             try:
                 display_package: DisplayPackage = future.result()
                 if display_package.should_display():
-                    updates.append(str(display_package))
+                    table.add_row(display_package.to_row())
+                    row_count += 1
             except Exception as exc:
                 exc_name = type(exc).__name__
                 message = str(exc)
                 if message:
-                    message = f" ({message})"
-                updates.append(
-                    f"e {package_name} generated an exception: {exc_name}{message}"
-                )
+                    message = f"{exc_name} ({message})"
+                else:
+                    message = exc_name
+                table.add_row([package_name, "error", "", message])
+                row_count += 1
 
-    if not updates:
+    table.set_style(prettytable.SINGLE_BORDER)
+    table.border = False
+    table.preserve_internal_border = True
+    table.align = "l"
+    table.sortby = "Type"
+    if row_count == 0:
         print("Everything up to date.")
     else:
-        print("\n".join(sorted(updates)))
+        print(table)
 
 
 def get_direct_dependencies(pyproject_file_path: str) -> set[str] | None:
@@ -144,8 +154,8 @@ class UnsupportedApiError(ScanDepsError):
 
 
 class TransitiveOrDirect(enum.Enum):
-    TRANSITIVE = "trans. "
-    DIRECT = "direct "
+    TRANSITIVE = "trans."
+    DIRECT = "direct"
     UNKNOWN = ""
 
 
@@ -159,12 +169,24 @@ class DisplayPackage:
     error: str = ""
 
     def __str__(self) -> str:
-        source = urlparse(self.source).netloc
+        return f"{self.transitive_or_direct.value}{self.domain} {self.name}: {self.message}"
+
+    @property
+    def versions(self):
+        return f"current={self.current_version} -> latest={self.latest_version}"
+
+    @property
+    def message(self):
         if self.error:
-            return (
-                f"{self.transitive_or_direct.value}{source} {self.name}: {self.error}"
-            )
-        return f"{self.transitive_or_direct.value}{source} {self.name}: current={self.current_version} -> latest={self.latest_version}"
+            return self.error
+        return self.versions
+
+    @property
+    def domain(self):
+        return urlparse(self.source).netloc
+
+    def to_row(self) -> list[str]:
+        return [self.name, self.transitive_or_direct.value, self.domain, self.message]
 
     def should_display(self) -> bool:
         return bool(self.error) or self.current_version != self.latest_version

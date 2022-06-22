@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "poetry-deps-scanner"
-version = "1.1.0"
+version = "2.0.0"
 description = "Analyse poetry dependencies and comment on gitlab"
 readme = "README.md"
 license = "MIT"

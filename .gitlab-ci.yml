@@ -1,5 +1,6 @@
 stages:
   - build
+  - scan
 
 variables:
   # Can't compose variables with user-defined ones, so we repeat ourselves :'(
@@ -22,10 +23,10 @@ variables:
 
 build:
   stage: build
-  image: docker:git
+  image: $PROXY_REGISTRY/docker:git
   <<: *only
   services:
-    - docker:stable
+    - $PROXY_REGISTRY/docker:stable
   tags:
     - docker
   before_script:
@@ -49,7 +50,7 @@ pre_commit:
 
 
 scan-deps:
-  stage: build
+  stage: scan
   image: $SCAN_DEPS_IMAGE
   allow_failure: true
   script:

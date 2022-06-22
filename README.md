@@ -42,25 +42,27 @@ python -m pip install poetry-deps-scanner
 The following snippet is an example output the first script may produce:
 
 ```
-direct devpi command-log: current=0.0.28 -> latest=0.0.29
-direct pypi  django: current=3.1.9 -> latest=3.2.1
-direct pypi  semver: current=3.0.0.dev2 -> latest=2.13.0
-trans. pypi  idna: current=2.10 -> latest=3.1
+ Name        │ Type   │ Source        │ Message
+─────────────┼────────┼───────────────┼───────────────────────────────────────
+ command-log │ direct │ xxxxx.itsf.io │ current=1.0.0 -> latest=2.0.0
+ coverage    │ direct │ pypi.org      │ current=6.3.2 -> latest=6.4.1
+ asgiref     │ trans. │ pypi.org      │ current=3.5.1 -> latest=3.5.2
+ grpclib     │ trans. │ github.com    │ Couldn't compare versions.
+ requests    │ error  │               │ ValueError (Hello world)
 ```
 
-The first column indicates whether the package is a direct or transitive
-dependency:
+The `Type` column indicates whether the package is a direct or transitive
+dependency, or if there has been an uncaught exception:
 * `direct` means the package is a direct dependency.
 * `trans.` means the package is a transitive dependency: the dependency
   of a direct dependency or of a transitive dependency.
+* `error` means there has been an uncaught error. The exception class and message
+  are displayed in the `Message` column
 
 This is computed by using the `pyproject.toml` if given. If this file is
-not provided on the command line, the column will be omitted.
+not provided on the command line, the column will be empty.
 
 A dependency is considered direct if it is present in the `pyproject.toml`.
-
-The second column indicates whether the package comes from PyPi or
-a devpi instance.
 
 ## Gitlab comment
 

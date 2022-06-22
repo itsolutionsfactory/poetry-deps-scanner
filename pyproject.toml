@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "poetry-deps-scanner"
-version = "1.1.0"
+version = "2.0.0"
 description = "Analyse poetry dependencies and comment on gitlab"
 readme = "README.md"
 license = "MIT"
@@ -33,10 +33,10 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.10,<4"
 toml = ">=0.10.2"
-requests = ">=2.25.1"
 python-gitlab = ">=2.6.0"
 packaging = "^21.3"
 pypi-simple = "^0.9.0"
+prettytable = "^3.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=6.2.2"

@@ -10,6 +10,8 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CI_SERVER_URL = os.getenv("CI_SERVER_URL")
 CI_PROJECT_ID = os.getenv("CI_PROJECT_ID")
 CI_MERGE_REQUEST_IID = os.getenv("CI_MERGE_REQUEST_IID")
+GITLAB_TLS_VERIFY = os.getenv("GITLAB_TLS_VERIFY", "true")
+GITLAB_TLS_VERIFY = GITLAB_TLS_VERIFY.lower() in ["true", "1", "yes"]
 
 
 def main():
@@ -22,7 +24,9 @@ def main():
         )
         sys.exit(1)
 
-    gl = gitlab.Gitlab(CI_SERVER_URL, private_token=BOT_TOKEN)
+    gl = gitlab.Gitlab(
+        CI_SERVER_URL, private_token=BOT_TOKEN, ssl_verify=GITLAB_TLS_VERIFY
+    )
     projects = gl.projects.get(CI_PROJECT_ID)
     mr = projects.mergerequests.get(CI_MERGE_REQUEST_IID)
     notes = mr.notes.list(all=True)

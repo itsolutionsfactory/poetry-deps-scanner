@@ -1,18 +1,18 @@
 ##############################################
 # Build virtualenv
 ##############################################
-FROM nexus.itsf.io:5005/python:3.10.4-bullseye AS venv
+FROM nexus.itsf.io:5005/python:3.10.7-bullseye AS venv
 
 # Prepare system
 ##############################################
-ENV POETRY_VERSION=1.1.11
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
+ENV POETRY_VERSION=1.1.15
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
 ENV PATH /root/.local/bin:$PATH
 
 # Install python dependencies
 ##############################################
-RUN pip install --user poetry-lock-check==0.1.0
+RUN pip install --user poetry-lock-check==0.1.0 cleo==0.8.1
 
 WORKDIR /app
 COPY pyproject.toml poetry.lock ./
@@ -33,7 +33,7 @@ RUN . /app/venv/bin/activate \
 ##############################################
 # Main image
 ##############################################
-FROM nexus.itsf.io:5005/python:3.10.4-slim-bullseye as final
+FROM nexus.itsf.io:5005/python:3.10.7-slim-bullseye as final
 
 # Expected env vars to comment in Gitlab MR
 ENV BOT_USERNAME ""

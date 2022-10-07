@@ -4,9 +4,9 @@ from __future__ import annotations
 import concurrent
 import enum
 import sys
+from collections.abc import Iterable
 from concurrent.futures.thread import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Iterable
 from urllib.parse import urlparse
 
 import prettytable
